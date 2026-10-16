@@ -3,46 +3,83 @@
 :root {
   --paper-cream: #f7f3e8;
   --paper-aged: #efe8d5;
+  --paper-card: #fcfaf3;
   --paper-line: #dfd5be;
+  --manuscript-border: #c98a70;
+  --manuscript-cell: rgba(201, 138, 112, 0.32);
   --crayon-orange: #d96b43;
   --crayon-mustard: #d9a441;
   --crayon-brown: #5c4a3e;
   --crayon-olive: #6b7b5c;
   --ink-dark: #3a2e25;
   --ink-muted: #756354;
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 }
 
 body {
   background-color: var(--paper-cream);
   color: var(--ink-dark);
   font-family: var(--font-body), "Noto Serif KR", Georgia, serif;
-  background-image: 
-    radial-gradient(rgba(92, 74, 62, 0.04) 1px, transparent 0),
-    radial-gradient(rgba(217, 107, 67, 0.03) 1px, transparent 0);
-  background-size: 24px 24px;
-  background-position: 0 0, 12px 12px;
+  background-image:
+    radial-gradient(rgba(92, 74, 62, 0.045) 1px, transparent 0),
+    radial-gradient(rgba(217, 107, 67, 0.03) 1px, transparent 0),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.6) 0%, rgba(239, 232, 213, 0.35) 100%);
+  background-size: 24px 24px, 32px 32px, 100% 100%;
+  background-position: 0 0, 12px 12px, 0 0;
+  overflow-x: hidden;
 }
 
 /* 손으로 그린 듯한 불규칙한 크레용 테두리 효과 */
 .crayon-box {
   border: 2.5px solid var(--crayon-brown);
   border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-  box-shadow: 3px 4px 0px rgba(92, 74, 62, 0.14);
+  box-shadow: 3px 4px 0px rgba(92, 74, 62, 0.12);
 }
 
 .crayon-box-orange {
   border: 2.5px solid var(--crayon-orange);
   border-radius: 18px 235px 18px 245px / 245px 18px 225px 18px;
-  box-shadow: 3px 4px 0px rgba(217, 107, 67, 0.18);
+  box-shadow: 3px 4px 0px rgba(217, 107, 67, 0.16);
 }
 
 .crayon-box-olive {
   border: 2.5px solid var(--crayon-olive);
   border-radius: 235px 18px 245px 18px / 18px 245px 18px 225px;
-  box-shadow: 3px 4px 0px rgba(107, 123, 92, 0.18);
+  box-shadow: 3px 4px 0px rgba(107, 123, 92, 0.16);
 }
 
-/* 그림일기 원고지/줄노트 배경 */
+/* 종이책 페이지 질감 및 그림자 */
+.sketchbook-sheet {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.55), transparent 55%),
+    linear-gradient(180deg, #fdfbf5 0%, #f6efe0 100%);
+  border: 2px solid #bda98e;
+  box-shadow:
+    0 18px 40px -15px rgba(58, 46, 37, 0.16),
+    0 4px 10px -2px rgba(58, 46, 37, 0.08),
+    inset 0 0 32px rgba(217, 164, 65, 0.06);
+}
+
+/* 미국 초등 저학년 Picture Journal 3선 줄공책 (Primary Writing Lines: 상단 실선 - 중단 점선 - 하단 기준선) */
+.en-primary-writing-row {
+  position: relative;
+  background-image:
+    linear-gradient(to bottom, rgba(114, 152, 188, 0.42) 0px, rgba(114, 152, 188, 0.42) 1.5px, transparent 1.5px),
+    repeating-linear-gradient(
+      to right,
+      rgba(217, 107, 67, 0.42) 0px,
+      rgba(217, 107, 67, 0.42) 6px,
+      transparent 6px,
+      transparent 12px
+    ),
+    linear-gradient(to bottom, transparent 46px, rgba(92, 74, 62, 0.52) 46px, rgba(92, 74, 62, 0.52) 48px);
+  background-size: 100% 48px, 100% 1.5px, 100% 48px;
+  background-position: 0 4px, 0 26px, 0 0;
+  background-repeat: repeat-y, repeat-x, repeat-y;
+}
+
+/* 그림일기 기본 줄노트 배경 */
 .diary-ruled-paper {
   background-image: repeating-linear-gradient(
     to bottom,
@@ -57,3 +94,53 @@ body {
   font-family: var(--font-hand), "Gaegu", cursive;
 }
 
+/* Apple 수준 모션 트랜지션 */
+.apple-transition {
+  transition-property: transform, opacity, background-color, border-color, box-shadow;
+  transition-duration: 260ms;
+  transition-timing-function: var(--ease-apple);
+}
+
+.apple-press:active {
+  transform: scale(0.975);
+}
+
+@keyframes pageTurnIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.992) rotate(-0.35deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.animate-page-turn {
+  animation: pageTurnIn 360ms var(--ease-apple) forwards;
+}
+
+@keyframes crayonPulse {
+  0%, 100% {
+    transform: scale(1) rotate(-1deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(1.5deg);
+  }
+}
+
+.animate-crayon-pulse {
+  animation: crayonPulse 2.2s ease-in-out infinite;
+}
+
+/* prefers-reduced-motion 완벽 존중 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
