@@ -1,50 +1,144 @@
 # My Little Picasso 🎨📒
+### *Memories, Drawn from Life.*
 
-**Tagline:** *Memories, Drawn from Life.*  
-**Vision:** *Turn real family moments into illustrated memories that remain meaningful over time.*
+> **"Cuteness comes from a child's crayon drawing; emotion comes from the passage of time."**  
+> *Never invent false drama to manufacture emotion. Ground every memory in real family photographs, verifiable visual evidence, and authentic time.*
 
-> **"귀여움은 아이의 그림에서 나오고, 감동은 시간이 흐른다는 사실에서 나와야 해."**
-
-My Little Picasso는 가족 사진을 예쁜 그림으로 바꾸는 단순한 필터 앱이 아닙니다.  
-사진 속 관찰 가능한 사실을 이해하고, 여러 사진 사이의 시간적·시각적 맥락을 발견하여 기억 그룹으로 묶고, 사실에 근거한 일기를 작성하며, 실제 검증 및 복구 루프(2-Pass Verification & Repair Loop)를 거쳐 손으로 만든 듯한 크레파스 그림일기와 **시간을 잇는 기억의 실타래(Memory Threads / Memory Time Machine)**로 보존하는 자율형 멀티모달 AI 메모리 에이전트입니다.
-
----
-
-## 🌐 배포 주소 (Google Cloud Run — `asia-northeast3`)
-
-- **서비스 URL:** https://my-little-picasso-501770174905.asia-northeast3.run.app
-- **라이브 헬스체크 API:** https://my-little-picasso-501770174905.asia-northeast3.run.app/api/health
+[![Live Service](https://img.shields.io/badge/Google_Cloud_Run-Live_Production-blue?logo=googlecloud)](https://my-little-picasso-501770174905.asia-northeast3.run.app)
+[![Gemini 4 Argon](https://img.shields.io/badge/Gemini_4_Argon-Multimodal_Orchestration-orange?logo=google)](https://ai.google.dev/)
+[![Gemini Nano Banana 2.1](https://img.shields.io/badge/Gemini_Nano_Banana_2.1-Authentic_Crayon_Art-green)](https://ai.google.dev/)
+[![Firestore & GCS](https://img.shields.io/badge/Cloud_Storage-Untouched_Originals-red?logo=googlecloud)](https://cloud.google.com/storage)
+[![Bilingual](https://img.shields.io/badge/Bilingual-Korean_원고지_&_US_Primary_Journal-purple)](#-dual-cultural-journal-formats)
 
 ---
 
-## ✨ 핵심 기능 및 아키텍처
+## 🌐 Live Production Deployment
 
-1. **다중 사진 업로드 & 기억 그룹화 (Batch Photo Ingestion & Memory Grouping)**
-   - 다중 사진 업로드, EXIF 촬영 날짜 추출, 시각 핑거프린트(8x8 해시) 기반 중복 사진 자동 감지 및 제외
-   - 확정된 촬영 날짜(`confirmed_date`), 시각 맥락 추정(`visual_context_inferred`), 날짜 미상 보존(`date_uncertain`)을 엄격히 구분하여 기억 그룹화
-2. **멀티모달 사진 사실 추출 (`gemini-4-argon` via Interactions API)**
-   - 사진에서 직접 관찰 가능한 사실(`observedFacts`), 반복 등장 사물·장소 시각 특징(`visualDescriptors`), 사진만으로 알 수 없는 불확실성(`uncertainties`) 분리 추출
-3. **근거 기반 일기 작성 & 실제 2-Pass 검증·복구 루프 (Real Verification & Repair Loop)**
-   - 각 일기 문장을 원본 사진 ID 및 관찰 사실(`observed`) / 맥락 추론(`context_inferred`)과 1:1 매핑
-   - **1차 검증 패스:** 결정론적 규칙 검증 + `gemini-4-argon` 독립 감사자(Auditor)가 사진 근거 없는 문장 적발
-   - **자동 복구 및 2차 재검증 패스:** 적발된 문장을 보수적으로 수정(`REPAIRED`)하거나 완전 삭제(`OMITTED`)한 뒤 **실제 2차 재검증 패스**를 수행하여 통과한 문장만 최종 반영 (UI에서 **허위 문장 강제 주입 테스트** 즉시 실행 가능)
-4. **한국어 네모 원고지(`KO`) & 영어 Primary Writing Lines(`EN`) 그림일기장**
-   - **한국어 모드 (`KO`):** 전통 초등학교 그림일기장의 **네모 원고지(Squared Manuscript Grid)**에 한 글자씩 들어가며 결정론적 손글씨 미세 흔들림이 적용된 실제 DOM 텍스트
-   - **영어 모드 (`EN`):** 미국 초등학교 Draw-and-Write 줄공책의 **3선 Primary Writing Lines(상단선·중간 점선·기준선)** 양식 지원
-   - **크레파스 일러스트 (`gemini-nano-banana-2.1`):** 관찰된 사실에만 기반해 따뜻한 어린이 크레파스 질감의 그림을 생성하며, 원본 가족 사진은 필터 없이 100% 무결성 보존
-5. **Memory Threads / Memory Time Machine (시간을 잇는 기억의 실타래)**
-   - 서로 다른 시기의 일기들 사이에서 반복 등장하는 사물(예: 노란 자전거), 장소, 아이의 성장 변화를 자동 발굴하여 타임라인으로 연결하고 시각적 근거와 추론 한계를 함께 표시
-6. **로그인 없는 브라우저 전용 영구 저장소 & 삭제·초기화 (`Firestore` + `Cloud Storage`)**
-   - 각 브라우저는 암호학적으로 안전한 `workspaceId` (UUID v4)와 비밀 토큰(`workspaceToken`)을 `localStorage`에 생성·보관하며, 서버는 `SHA-256(workspaceToken)` 해시를 타이밍 안전 비교(`timingSafeEqual`)로 검증하여 타 사용자의 UUID 조회·수정·삭제를 원천 차단(`403 Forbidden`)
-   - **`Delete This Diary` (개별 일기 삭제):** 선택한 일기 페이지와 다른 일기에서 참조하지 않는 전용 Cloud Storage 미디어 파일만 즉시 영구 삭제
-   - **`Reset My Workspace` (전체 작업 공간 초기화):** 세대 번호(`generationEpoch`)를 원자적으로 먼저 증가시켜 진행 중인 AI 생성 작업의 부활을 차단하고, 해당 UUID의 모든 Firestore 문서와 Cloud Storage 객체를 즉시 영구 파기 (버킷 Soft Delete `0초` 설정)
+- **Live Application URL:** [https://my-little-picasso-501770174905.asia-northeast3.run.app](https://my-little-picasso-501770174905.asia-northeast3.run.app)
+- **Live Automated Health Check API:** [https://my-little-picasso-501770174905.asia-northeast3.run.app/api/health](https://my-little-picasso-501770174905.asia-northeast3.run.app/api/health)
+- **Primary Region:** Google Cloud `asia-northeast3` (Seoul)
 
 ---
 
-## 🛠️ 로컬 실행 및 클라우드 배포 방법
+## 💡 Executive Summary
 
-### 1. 환경 변수 설정 (`.env`)
-`.env.example`을 참고하여 `.env` 파일을 구성합니다 (API 키는 절대 저장소에 커밋하지 마세요):
+**My Little Picasso** is not an artistic image filter or a generic LLM wrapper. It is an **autonomous multimodal AI memory agent** that transforms batches of real family photos into authentic, grounded illustrated diaries, while discovering longitudinal **Memory Threads** across time.
+
+Instead of hallucinating fictitious dialogue, emotional states, or dramatic narratives, My Little Picasso strictly adheres to **visual fact extraction, 1:1 photo evidence grounding, and a closed-loop 2-Pass Verification and Self-Repair agent architecture**.
+
+---
+
+## 🏆 Hackathon Evaluation Criteria & Architectural Alignment
+
+| Evaluation Dimension | Architectural Implementation in My Little Picasso | Evidence in Codebase |
+| :--- | :--- | :--- |
+| **1. Substantive Use of Gemini 4 Argon** | **Gemini 4 Argon** orchestrates the entire reasoning pipeline: multimodal visual feature extraction, EXIF/visual memory clustering, factual diary authoring, independent adversarial auditing, and cross-diary temporal thread discovery via Google GenAI Interactions API. | [`src/lib/gemini.ts`](src/lib/gemini.ts)<br>[`PRIMARY_MODEL = "gemini-4-argon"`](src/lib/gemini.ts#L18) |
+| **2. True Autonomous Agentic Behavior** | Autonomous cycle: **Inspect Visuals ➔ Form Hypotheses ➔ Group Memories ➔ Draft Grounded Content ➔ Execute Adversarial Audit ➔ Plan Self-Repair Actions (Repair vs. Omit) ➔ Re-Verify ➔ Trigger Multi-Artist Illustration**. It does not follow a brittle fixed script. | [`runRealVerificationAndRepairLoop()`](src/lib/gemini.ts)<br>[`src/app/api/studio/generate/route.ts`](src/app/api/studio/generate/route.ts) |
+| **3. Real 2-Pass Verification & Repair Loop** | Employs an independent model auditor that verifies each sentence against visual evidence. Unsubstantiated claims are flagged (`REPAIRED` or `OMITTED`), triggering an actual second verification pass before final commit. Includes live **Hallucination Injection Stress Testing** in the UI. | [`src/lib/gemini.ts`](src/lib/gemini.ts#L700-L1000)<br>[`POST /api/verify-model`](src/app/api/verify-model/route.ts) |
+| **4. Deep Multimodal Reasoning (Not Captioning)** | Discovers shared visual descriptors (e.g., yellow training bicycle, red sneakers, specific park benches) across disparate dates (2025 vs. 2026) to construct **Memory Threads** with explicit confidence levels and documented limits of inference. | [`discoverMemoryThreadsAcrossDiaries()`](src/lib/gemini.ts)<br>[`src/types/diary.ts`](src/types/diary.ts) |
+| **5. Latency & Throughput Engineering** | Dual-tier image pipeline: original high-resolution photos are streamed directly to Cloud Storage untouched, while preprocessed, orientation-normalized 640px lightweight copies are fed to Gemini vision in parallel batches with streaming NDJSON events. | [`src/app/api/studio/generate/route.ts`](src/app/api/studio/generate/route.ts)<br>[`src/lib/storage.ts`](src/lib/storage.ts) |
+| **6. Enterprise Privacy & Ephemeral Workspaces** | Zero-login privacy model. Browser generates a cryptographically random UUID v4 `workspaceId` and secret token. All storage and Firestore operations enforce `timingSafeEqual(SHA-256(token))` verification. Instant workspace wipe complies with 0s GCS soft-delete policy. | [`src/lib/storage.ts`](src/lib/storage.ts)<br>[`scripts/verify-cloud-persistence.mjs`](scripts/verify-cloud-persistence.mjs) |
+
+---
+
+## 🤖 AI Model Roles & Responsibilities
+
+My Little Picasso separates orchestration, semantic reasoning, adversarial verification, and artistic rendering into specialized, best-in-class models:
+
+```mermaid
+flowchart TD
+    UserPhotos["Family Photos (Batch Upload)"] --> Preprocess["Orientation Normalization & 640px Dual-Tier Splitting"]
+    Preprocess -->|"Untouched Originals"| GCS["Google Cloud Storage (Private Bucket)"]
+    Preprocess -->|"Lightweight Payloads"| ArgonVision["gemini-4-argon (Multimodal Fact Ingestion)"]
+    
+    ArgonVision --> MemoryCluster["Memory Grouping Engine (EXIF + Visual Descriptors)"]
+    MemoryCluster --> ArgonWriter["gemini-4-argon (Grounded Bilingual Diary Author)"]
+    
+    ArgonWriter --> Draft["Draft Sentences + Evidence Tags (Observed vs. Inferred)"]
+    Draft --> DeterministicCheck["Deterministic Quoted-Dialogue & Hallucination Filter"]
+    
+    DeterministicCheck --> Auditor["gemini-4-argon (Independent Adversarial Auditor - Pass 1)"]
+    Auditor --"Unsubstantiated Claims Found"--> RepairEngine["Argon Action Planner: Repair or Omit Claim"]
+    RepairEngine --> ReAuditor["gemini-4-argon (Re-Verification - Pass 2)"]
+    ReAuditor --> FinalGroundedDiary["Grounded Bilingual Diary (Verified)"]
+    
+    FinalGroundedDiary --> BananaArtist["gemini-nano-banana-2.1 (Authentic Crayon Artist)"]
+    BananaArtist --> CrayonIllustration["Authentic Crayon Drawing (512x512)"]
+    
+    FinalGroundedDiary --> ArgonThreads["gemini-4-argon (Longitudinal Memory Time Machine)"]
+    ArgonThreads --> MemoryThreads["Cross-Date Memory Threads & Evidence Links"]
+    
+    FinalGroundedDiary & CrayonIllustration & MemoryThreads --> Firestore["Google Cloud Firestore (Transactional Workspace Storage)"]
+```
+
+### Detailed Model Delegation Matrix
+
+| Model Identifier | Primary Responsibility | Why This Model? |
+| :--- | :--- | :--- |
+| **`gemini-4-argon`** | **Visual Fact Ingestion & Descriptors** | High-precision visual entity recognition without hallucinating speculative backstories or false actions. |
+| **`gemini-4-argon`** | **Bilingual Grounded Diary Writing** | Crafts warm, child-perspective 3-sentence diaries in Korean and English, strictly referencing observed photo IDs. |
+| **`gemini-4-argon`** | **Independent Auditor (2-Pass Verification Loop)** | Acts as an adversarial checker evaluating whether each sentence has definitive photographic backing. |
+| **`gemini-4-argon`** | **Memory Threads / Time Machine Analysis** | Compares entities across months/years to detect genuine growth and recurring objects. |
+| **`gemini-nano-banana-2.1`** | **Authentic Crayon Illustration** | Specialized diffusion model generating warm, child-like wax crayon textures, paper grain, and imperfect lines from grounded scene descriptions. |
+
+---
+
+## 🌟 Key Product Capabilities
+
+### 1. 2-Pass Verification and Self-Repair Loop with Live Stress Testing
+- Every sentence is labeled as either **Direct Observation (`observed`)** or **Contextual Inference (`context_inferred`)**.
+- The independent **`gemini-4-argon` Auditor** analyzes each claim against the source photo evidence.
+- If a sentence asserts fabricated quotes or unverifiable claims (e.g., *"Daddy promised we would go to Disneyland tomorrow"* when only a park bench is visible), the agent either repairs the text using strictly visible details or completely removes the sentence.
+- **Live Demo Verification Feature:** Users can toggle **"🧪 Inject Fabricated Sentences"** directly in the studio UI to witness the agent catch, reject, and repair non-grounded claims in real time.
+
+### 2. Dual Cultural Journal Formats (Instant Bilingual Toggle)
+- **🇰🇷 Korean Elementary Squared Manuscript Grid (`원고지`):**
+  - Compact **22-column** format (`MANUSCRIPT_COLS = 22`) fitting comfortably on a single screen without vertical bloat.
+  - Authentic procedural handwriting micro-jitter applied to character positions.
+- **🇺🇸 US Elementary Primary Writing Lines:**
+  - 3-line ruled notebook layout (Top Headline, Midline Dash, Baseline) standard in American primary schools.
+  - Clicking any sentence instantly highlights the exact source photograph associated with that sentence.
+  - Toggling between Korean and English translates titles, dates, diary sentences, evidence notes, and calendar stamps in real time.
+
+### 3. Monthly Illustrated Crayon Calendar (`월간 그림 달력`)
+- Spiral-bound nostalgic calendar view (`Mon` – `Sun`, 1st to 31st).
+- Empty leading days are decorated with crayon block lettering spelling the month name (e.g., `M · A · Y`).
+- Every date with a recorded diary displays that day's **cute square crayon illustration, weather badge, date numeral, and hand-lettered memory stamp** (e.g., *"First Bicycle Ride"* / *"자전거 첫 연습"*).
+- Clicking any day cell smoothly opens that specific daily diary page.
+
+### 4. Weekly Representative Art Studio (`한 주를 대표하는 그림`)
+- Aggregates all daily picture diaries within a given calendar week.
+- Synthesizes a representative weekly crayon illustration and a unified reflection narrative, preserving the arc of family life over the week.
+
+### 5. Fixed-Height Photo Filmstrip (Zero Vertical Layout Jitter)
+- Handles 1 to 20+ photos per day without stretching the diary canvas vertically.
+- Employs a **Featured Photo Frame (`aspect-4/3`) with Next/Previous arrows** combined with a horizontal thumbnail filmstrip.
+
+### 6. Memory Time Machine (Cross-Date Memory Threads)
+- Connects recurring objects, outfits, and developmental milestones across different months or years (e.g., *"Yellow balance bike with training wheels in May 2025"* ➔ *"Yellow pedal bike without training wheels in April 2026"*).
+- Always details visual matching clues, confidence levels, and explicit inference limitations.
+
+---
+
+## 🔒 Enterprise-Grade Privacy & Ephemeral Workspaces
+
+Family memories demand uncompromising privacy:
+1. **Zero Login / Zero Tracking:** Workspaces are generated locally with cryptographically secure UUID v4 identifiers and private bearer tokens stored exclusively in `localStorage`.
+2. **Timing-Safe Token Authentication:** Every API request to `/api/workspace`, `/api/workspace/media`, and `/api/studio/generate` performs `timingSafeEqual(SHA-256(requestToken), storedHash)`. Unauthorized access is rejected with `403 Forbidden`.
+3. **Atomic Generation Epochs:** Generation jobs verify the workspace `generationEpoch`. If a user clicks **"Reset Workspace"** while an AI generation is in flight, the epoch counter atomically increments, automatically aborting and discarding stale cloud writes.
+4. **Instant Destruction & Soft-Delete Compliance:** Resetting a workspace immediately purges all Firestore documents and invokes Google Cloud Storage bucket object deletions with retention set to `0 seconds`.
+
+---
+
+## 🚀 Getting Started & Local Development
+
+### 1. Prerequisites
+- Node.js 18+ (tested on Node.js 20 LTS & 22)
+- Google Cloud Project with Cloud Run, Firestore, and Cloud Storage enabled
+- Gemini API Key with access to `gemini-4-argon` and `gemini-nano-banana-2.1`
+
+### 2. Environment Configuration
+Create a `.env` file in the root directory (never commit API keys or credentials):
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 GOOGLE_CLOUD_PROJECT=h2gdm-hack26icn-2627
@@ -53,18 +147,66 @@ FIRESTORE_DATABASE_ID=(default)
 GCS_MEDIA_BUCKET=h2gdm-hack26icn-2627-picasso-media
 ```
 
-### 2. 로컬 개발 서버 및 통합 검증 실행
+### 3. Installation & Local Execution
 ```bash
+# Install dependencies
 npm install
+
+# Run Next.js local development server
 npm run dev
-# 별도 터미널에서 13개 항목 클라우드 영구 저장·격리·삭제·초기화 통합 검증 실행
+
+# Open http://localhost:3000 in your browser
+```
+
+### 4. Automated Cloud Persistence & Verification Suite
+Run the automated end-to-end cloud isolation test suite (13 critical assertions):
+```bash
 node scripts/verify-cloud-persistence.mjs
 ```
 
-### 3. Google Cloud Run 배포 (`asia-northeast3`)
+### 5. Production Cloud Run Deployment
+Deploy directly to Google Cloud Run in `asia-northeast3`:
 ```bash
 gcloud run deploy my-little-picasso \
   --source . \
   --region asia-northeast3 \
   --allow-unauthenticated
 ```
+
+---
+
+## 📂 Repository Structure
+
+```text
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── health/route.ts            # Live API & Cloud dependency health check
+│   │   │   ├── hello-diary/route.ts       # Single-photo hello world pipeline
+│   │   │   ├── studio/generate/route.ts   # Multi-photo streaming NDJSON generation pipeline
+│   │   │   ├── verify-model/route.ts      # Live Gemini 4 Argon interactive audit endpoint
+│   │   │   ├── workspace/route.ts         # Workspace CRUD, bilingual translation & weekly summaries
+│   │   │   └── workspace/media/route.ts   # Authenticated media serving from GCS
+│   │   ├── globals.css                    # Warm paper textures, crayon styles, manuscript grids
+│   │   ├── layout.tsx                     # Root layout with warm typography
+│   │   └── page.tsx                       # Full-featured bilingual interactive client studio
+│   ├── lib/
+│   │   ├── demo-photos.ts                 # 5 curated multi-date demo photos for instant exploration
+│   │   ├── gemini.ts                      # Gemini 4 Argon & Nano Banana 2.1 orchestration & verification
+│   │   └── storage.ts                     # Firestore & GCS secure multi-tenant storage manager
+│   └── types/
+│       └── diary.ts                       # Strong TypeScript definitions for Grounding, Audits, Threads
+├── scripts/
+│   ├── verify-cloud-persistence.mjs       # Automated 13-point cloud isolation verification
+│   └── test-agent-pipeline.mjs            # Autonomous pipeline unit test
+├── Dockerfile                             # Optimized container build for Google Cloud Run
+├── README.md                              # Comprehensive Hackathon submission documentation
+└── package.json                           # Dependencies & build scripts
+```
+
+---
+
+## 🏆 Hackathon Team & Acknowledgements
+
+Created with ❤️ for the **Google DeepMind Hackathon 2026** by the **My Little Picasso** Team.  
+*Memories, Drawn from Life.*
