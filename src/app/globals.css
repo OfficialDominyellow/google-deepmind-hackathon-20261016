@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --paper-cream: #f7f3e8;
+  --paper-aged: #efe8d5;
+  --paper-line: #dfd5be;
+  --crayon-orange: #d96b43;
+  --crayon-mustard: #d9a441;
+  --crayon-brown: #5c4a3e;
+  --crayon-olive: #6b7b5c;
+  --ink-dark: #3a2e25;
+  --ink-muted: #756354;
+}
+
+body {
+  background-color: var(--paper-cream);
+  color: var(--ink-dark);
+  font-family: var(--font-body), "Noto Serif KR", Georgia, serif;
+  background-image: 
+    radial-gradient(rgba(92, 74, 62, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(217, 107, 67, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* 손으로 그린 듯한 불규칙한 크레용 테두리 효과 */
+.crayon-box {
+  border: 2.5px solid var(--crayon-brown);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 4px 0px rgba(92, 74, 62, 0.14);
+}
+
+.crayon-box-orange {
+  border: 2.5px solid var(--crayon-orange);
+  border-radius: 18px 235px 18px 245px / 245px 18px 225px 18px;
+  box-shadow: 3px 4px 0px rgba(217, 107, 67, 0.18);
+}
+
+.crayon-box-olive {
+  border: 2.5px solid var(--crayon-olive);
+  border-radius: 235px 18px 245px 18px / 18px 245px 18px 225px;
+  box-shadow: 3px 4px 0px rgba(107, 123, 92, 0.18);
+}
+
+/* 그림일기 원고지/줄노트 배경 */
+.diary-ruled-paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 35px,
+    rgba(92, 74, 62, 0.18) 36px
+  );
+  line-height: 36px;
+}
+
+.font-handwriting {
+  font-family: var(--font-hand), "Gaegu", cursive;
+}
+
