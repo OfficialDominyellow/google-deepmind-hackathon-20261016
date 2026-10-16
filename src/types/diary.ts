@@ -32,6 +32,10 @@ export interface ObservedPhotoAnalysis {
 export interface GroundedDiarySentence {
   id: string;
   text: string;
+  /** 한국어 일기 문장 (한/영 즉시 전환용) */
+  textKo?: string;
+  /** 영어 일기 문장 (한/영 즉시 전환용) */
+  textEn?: string;
   /** 사용자가 수정하기 전 AI가 생성/검증한 원문 보존 */
   originalModelText?: string;
   /** 사용자가 직접 수정했는지 여부 (모델 출력과 사용자 수정 구분 보존) */
@@ -42,6 +46,8 @@ export interface GroundedDiarySentence {
   groundingType: "observed" | "context_inferred";
   /** 문장의 근거 설명 */
   evidenceNote: string;
+  evidenceNoteKo?: string;
+  evidenceNoteEn?: string;
 }
 
 export interface VerificationAuditItem {
@@ -132,20 +138,31 @@ export interface SavedDiaryPage {
   dateIso: string | null;
   /** 일기장 상단에 표시할 날짜/요일 텍스트 */
   diaryDateText: string;
+  diaryDateTextKo?: string;
+  diaryDateTextEn?: string;
   /** 날씨 아이콘 */
   weather: WeatherKind;
   /** 그림일기 제목 */
   diaryTitle: string;
+  diaryTitleKo?: string;
+  diaryTitleEn?: string;
+  /** 월간 달력 네모칸에 들어갈 짧은 손글씨 요약 라벨 (예: "노란 자전거" / "Yellow Bike") */
+  calendarStampLabelKo?: string;
+  calendarStampLabelEn?: string;
   isTitleUserEdited?: boolean;
   /** 기억 그룹화 기준 및 설명 */
   groupingBasis: GroupingBasis;
   groupingReason: string;
+  groupingReasonKo?: string;
+  groupingReasonEn?: string;
   /** 이 일기 페이지에 속한 원본 사진 목록 */
   photos: StoredPhotoItem[];
   /** 검증 및 복구를 거친 최종 문장 목록 */
   sentences: GroundedDiarySentence[];
   /** 전체 본문 텍스트 */
   fullDiaryText: string;
+  fullDiaryTextKo?: string;
+  fullDiaryTextEn?: string;
   /** 검증 및 복구 루프 상세 리포트 */
   verification: VerificationReport;
   /** 크레파스 일러스트 정보 */
@@ -167,6 +184,37 @@ export interface SavedDiaryPage {
     totalDurationMs: number;
     interactionIds: string[];
   };
+}
+
+/**
+ * 한 주(Week)를 대표하는 주간 크레파스 대표 그림 & 한/영 주간 추억 요약
+ */
+export interface WeeklySummaryItem {
+  weekId: string;
+  monthKey: string;
+  weekStartIso: string;
+  weekEndIso: string;
+  weekLabelKo: string;
+  weekLabelEn: string;
+  titleKo: string;
+  titleEn: string;
+  summaryKo: string;
+  summaryEn: string;
+  highlightsKo: string[];
+  highlightsEn: string[];
+  diaryIds: string[];
+  crayonIllustration: {
+    generatedByModel: string;
+    mimeType: string;
+    gcsObjectPath?: string | null;
+    mediaUrl?: string | null;
+    base64Data?: string;
+    promptUsed: string;
+    fallbackSvgUsed: boolean;
+    status: "ready" | "failed" | "retrying";
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -211,4 +259,6 @@ export interface WorkspaceDocument {
   lastResetAt?: string | null;
   pendingDeletePaths?: string[];
   memoryThreads: MemoryThreadConnection[];
+  weeklySummaries?: WeeklySummaryItem[];
 }
+

@@ -12,6 +12,7 @@ import type {
   VerificationAuditItem,
   VerificationReport,
   WeatherKind,
+  WeeklySummaryItem,
 } from "@/types/diary";
 
 export const PRIMARY_MODEL = "gemini-4-argon";
@@ -723,10 +724,10 @@ export async function generateVerifiedDiaryForCluster(params: {
   const client = getGeminiClient();
   const interactionIds: string[] = [];
   const validPhotoIds = params.cluster.photos.map((p) => p.photoId);
-  const diaryDateText = formatDiaryDateHeader(
-    params.cluster.dateIso,
-    params.language
-  );
+  const diaryDateTextKo = formatDiaryDateHeader(params.cluster.dateIso, "ko");
+  const diaryDateTextEn = formatDiaryDateHeader(params.cluster.dateIso, "en");
+  const diaryDateText =
+    params.language === "en" ? diaryDateTextEn : diaryDateTextKo;
 
   const consolidatedFacts = params.cluster.photos.map((p) => ({
     photoId: p.photoId,
@@ -736,84 +737,53 @@ export async function generateVerifiedDiaryForCluster(params: {
     uncertainties: p.analysis.uncertainties,
   }));
 
-  const draftPrompt =
-    params.language === "en"
-      ? `You are the Grounded Childhood Picture Journal Writer for 'My Little Picasso'.
-Write a warm, genuine 3-sentence picture journal entry in English from a young child's gentle perspective, strictly grounded ONLY in the observed facts from the photos below.
-Rules:
-1. NEVER invent spoken dialogue (no quotation marks claiming someone said something).
-2. NEVER fabricate events, places, or people not present in observedFacts.
-3. Distinguish between direct visual observation ("observed") and gentle contextual inference ("context_inferred").
-4. Link every sentence to one or more valid photo IDs from: ${JSON.stringify(validPhotoIds)}.
-5. Choose a weather icon ("sunny", "cloudy", "rainy", "snowy") matching the outdoor/indoor clues (default "sunny" if unclear).
+  const draftPrompt = `너는 'My Little Picasso'의 사실 기반 어린이 그림일기 작가야 (Bilingual Korean & English Picture Diary Writer).
+아래 사진들에서 추출된 관찰 사실(observedFacts)에만 엄격히 근거하여, 공책 한 페이지에 아담하게 들어가는 **짧고 간결한 3문장** 그림일기를 **한국어(Ko)와 영어(En) 두 가지 버전 모두** 동시에 작성해줘.
 
-Photos & Observed Facts:
-${JSON.stringify(consolidatedFacts, null, 2)}
-
-Respond ONLY in valid JSON:
-{
-  "diaryTitle": "Short, warm childlike title (max 6 words)",
-  "weather": "sunny",
-  "sentences": [
-    {
-      "id": "s1",
-      "text": "First grounded journal sentence.",
-      "sourcePhotoIds": ["${validPhotoIds[0]}"],
-      "groundingType": "observed",
-      "evidenceNote": "Visual fact supporting this sentence"
-    },
-    {
-      "id": "s2",
-      "text": "Second grounded journal sentence.",
-      "sourcePhotoIds": ["${validPhotoIds[0]}"],
-      "groundingType": "observed",
-      "evidenceNote": "Visual fact supporting this sentence"
-    },
-    {
-      "id": "s3",
-      "text": "Third warm sentence grounded in the photo context.",
-      "sourcePhotoIds": ${JSON.stringify(validPhotoIds)},
-      "groundingType": "context_inferred",
-      "evidenceNote": "Visual context supporting this sentence"
-    }
-  ]
-}`
-      : `너는 'My Little Picasso'의 사실 기반 어린이 그림일기 작가야.
-아래 사진들에서 추출된 관찰 사실(observedFacts)에만 엄격히 근거하여, 초등학교 저학년 아이가 직접 쓴 것처럼 따뜻하고 순수한 한국어 그림일기(3문장, '~했다/했어요/보였다' 체)를 작성해.
-절대 규칙:
-1. 사진에 없는 대화(직접 인용구 "..."라고 말했다 등)나 확인되지 않은 사건/장소를 절대 지어내지 마.
-2. 직접 관찰한 사실("observed")과 사진 맥락에서 자연스럽게 유추한 내용("context_inferred")을 구분해.
-3. 각 문장은 반드시 실제 근거가 된 사진 ID(${JSON.stringify(validPhotoIds)})를 sourcePhotoIds로 연결해.
-4. 사진 분위기에 어울리는 날씨("sunny", "cloudy", "rainy", "snowy" 중 택1)와 귀여운 그림일기 제목을 정해줘.
+핵심 길이 & 스타일 규칙:
+1. 그림일기가 절대 길어지면 안 됨! 한국어 문장(textKo)은 각 문장당 공백 포함 **18자~28자 이내**로 짧고 귀엽게('~했다/했어요/참 좋았다' 체) 작성해서, 3문장 전체를 합쳐도 원고지 70~85칸(22칸 원고지 3~4줄) 안에 쏙 들어오게 해.
+2. 영어 문장(textEn)도 똑같은 일기 내용에 대해 각 문장당 **8~14단어 이내**의 따뜻하고 간결한 어린이 영어 일기로 작성해.
+3. 월간 달력 네모칸에 들어갈 짧은 손글씨 요약 라벨(calendarStampLabelKo: 2~3단어 한국어, calendarStampLabelEn: 2~3 words English, 예: "노란 자전거 연습" / "Yellow Bike Day")을 함께 작성해.
+4. 사진에 없는 대화(직접 인용구 "..."라고 말했다 등)나 확인되지 않은 사건/장소를 절대 지어내지 마.
+5. 직접 관찰한 사실("observed")과 사진 맥락에서 자연스럽게 유추한 내용("context_inferred")을 구분하고, 각 문장에 실제 근거 사진 ID(${JSON.stringify(validPhotoIds)})를 sourcePhotoIds로 연결해.
 
 사진별 관찰 사실:
 ${JSON.stringify(consolidatedFacts, null, 2)}
 
 반드시 아래 JSON 형식으로만 응답할 것:
 {
-  "diaryTitle": "아이 눈높이의 따뜻한 그림일기 제목",
+  "diaryTitleKo": "아이 눈높이의 짧은 한국어 제목 (12자 이내)",
+  "diaryTitleEn": "Short warm English title (max 5 words)",
+  "calendarStampLabelKo": "월간달력 칸용 2~3단어 요약 (예: 노란 자전거)",
+  "calendarStampLabelEn": "2-3 word calendar label (e.g., Yellow Bike)",
   "weather": "sunny",
   "sentences": [
     {
       "id": "s1",
-      "text": "첫 번째 그림일기 문장",
+      "textKo": "첫 번째 짧은 한국어 일기 문장 (25자 내외).",
+      "textEn": "First short grounded English journal sentence.",
       "sourcePhotoIds": ["${validPhotoIds[0]}"],
       "groundingType": "observed",
-      "evidenceNote": "근거가 된 사진 속 시각 사실"
+      "evidenceNoteKo": "근거가 된 사진 속 시각 사실 (한국어)",
+      "evidenceNoteEn": "Visual fact supporting this sentence (English)"
     },
     {
       "id": "s2",
-      "text": "두 번째 그림일기 문장",
+      "textKo": "두 번째 짧은 한국어 일기 문장 (25자 내외).",
+      "textEn": "Second short grounded English journal sentence.",
       "sourcePhotoIds": ["${validPhotoIds[0]}"],
       "groundingType": "observed",
-      "evidenceNote": "근거가 된 사진 속 시각 사실"
+      "evidenceNoteKo": "근거가 된 사진 속 시각 사실 (한국어)",
+      "evidenceNoteEn": "Visual fact supporting this sentence (English)"
     },
     {
       "id": "s3",
-      "text": "세 번째 그림일기 문장",
+      "textKo": "세 번째 짧은 한국어 일기 문장 (25자 내외).",
+      "textEn": "Third warm concise English sentence grounded in context.",
       "sourcePhotoIds": ${JSON.stringify(validPhotoIds)},
       "groundingType": "context_inferred",
-      "evidenceNote": "근거가 된 사진 속 맥락"
+      "evidenceNoteKo": "근거가 된 사진 속 맥락 (한국어)",
+      "evidenceNoteEn": "Visual context supporting this sentence (English)"
     }
   ]
 }`;
@@ -833,43 +803,66 @@ ${JSON.stringify(consolidatedFacts, null, 2)}
 
   const parsedDraft = parseJsonFromModelText<{
     diaryTitle?: string;
+    diaryTitleKo?: string;
+    diaryTitleEn?: string;
+    calendarStampLabelKo?: string;
+    calendarStampLabelEn?: string;
     weather?: WeatherKind;
-    sentences?: GroundedDiarySentence[];
+    sentences?: Array<{
+      id?: string;
+      text?: string;
+      textKo?: string;
+      textEn?: string;
+      sourcePhotoIds?: string[];
+      groundingType?: "observed" | "context_inferred";
+      evidenceNote?: string;
+      evidenceNoteKo?: string;
+      evidenceNoteEn?: string;
+    }>;
   }>(draftInteraction.output_text || "{}");
 
   const draftSentences: GroundedDiarySentence[] = (
     parsedDraft.sentences || []
-  ).map((s, idx) => ({
-    id: s.id || `s${idx + 1}`,
-    text: s.text,
-    originalModelText: s.text,
-    isUserEdited: false,
-    sourcePhotoIds:
-      Array.isArray(s.sourcePhotoIds) &&
-      s.sourcePhotoIds.some((id) => validPhotoIds.includes(id))
-        ? s.sourcePhotoIds.filter((id) => validPhotoIds.includes(id))
-        : [validPhotoIds[0]],
-    groundingType:
-      s.groundingType === "context_inferred" ? "context_inferred" : "observed",
-    evidenceNote:
-      s.evidenceNote ||
-      (params.language === "en"
-        ? "Grounded in observed photo evidence"
-        : "원본 사진 관찰 사실 근거"),
-  }));
+  )
+    .slice(0, 3)
+    .map((s, idx) => {
+      const ko = s.textKo || s.text || "사진 속 따뜻한 가족의 순간을 기록했어요.";
+      const en = s.textEn || s.text || "We recorded a warm family moment from our photo.";
+      const primaryText = params.language === "en" ? en : ko;
+      const evKo = s.evidenceNoteKo || s.evidenceNote || "원본 사진 관찰 사실 근거";
+      const evEn = s.evidenceNoteEn || s.evidenceNote || "Grounded in observed photo evidence";
+      return {
+        id: s.id || `s${idx + 1}`,
+        text: primaryText,
+        textKo: ko,
+        textEn: en,
+        originalModelText: primaryText,
+        isUserEdited: false,
+        sourcePhotoIds:
+          Array.isArray(s.sourcePhotoIds) &&
+          s.sourcePhotoIds.some((id) => validPhotoIds.includes(id))
+            ? s.sourcePhotoIds.filter((id) => validPhotoIds.includes(id))
+            : [validPhotoIds[0]],
+        groundingType:
+          s.groundingType === "context_inferred" ? "context_inferred" : "observed",
+        evidenceNote: params.language === "en" ? evEn : evKo,
+        evidenceNoteKo: evKo,
+        evidenceNoteEn: evEn,
+      };
+    });
 
   // 의도적 할루시네이션(허위 주장) 주입 테스트 옵션: 검증/복구 루프가 실제로 적발하고 고치는지 검증
   if (params.injectHallucinationTest) {
+    const fakeKo =
+      '갑자기 보라색 공룡이 우주선을 타고 내려와서 "우리 같이 화성 놀이공원에 가자!"라고 외쳤어요.';
+    const fakeEn =
+      'Suddenly a giant purple dinosaur landed in a spaceship and shouted "Let\'s go to Mars!"';
     const fakeSentence: GroundedDiarySentence = {
       id: `s_hallucination_${Date.now().toString().slice(-3)}`,
-      text:
-        params.language === "en"
-          ? 'Suddenly a giant purple dinosaur landed in a spaceship and shouted "Let\'s go to Mars!"'
-          : '갑자기 보라색 공룡이 우주선을 타고 내려와서 "우리 같이 화성 놀이공원에 가자!"라고 외쳤어요.',
-      originalModelText:
-        params.language === "en"
-          ? 'Suddenly a giant purple dinosaur landed in a spaceship and shouted "Let\'s go to Mars!"'
-          : '갑자기 보라색 공룡이 우주선을 타고 내려와서 "우리 같이 화성 놀이공원에 가자!"라고 외쳤어요.',
+      text: params.language === "en" ? fakeEn : fakeKo,
+      textKo: fakeKo,
+      textEn: fakeEn,
+      originalModelText: params.language === "en" ? fakeEn : fakeKo,
       isUserEdited: false,
       sourcePhotoIds: [validPhotoIds[0]],
       groundingType: "observed",
@@ -877,6 +870,8 @@ ${JSON.stringify(consolidatedFacts, null, 2)}
         params.language === "en"
           ? "[Injected Unverified Claim for Auditor Test]"
           : "[검증 루프 테스트를 위해 의도적으로 주입된 허위 문장]",
+      evidenceNoteKo: "[검증 루프 테스트를 위해 의도적으로 주입된 허위 문장]",
+      evidenceNoteEn: "[Injected Unverified Claim for Auditor Test]",
     };
     draftSentences.push(fakeSentence);
   }
@@ -891,13 +886,19 @@ ${JSON.stringify(consolidatedFacts, null, 2)}
 
   const crayonPrompt = `Authentic 7-year-old child's wax crayon drawing on warm cream sketchbook paper (#F7F3E8). Scene based on real family moment: ${sceneDescriptions}. Key visual elements: ${factHighlights}. Style: uneven hand-drawn wax crayon strokes, varied hand pressure, overlapping colors, visible paper tooth and wax crumbs, warm nostalgic palette (faded orange #D96B43, mustard yellow #D9A441, earthy brown #5C4A3E, muted olive #6B7B5C, soft sky blue). Strictly no text, no letters, no watermarks, no photorealism.`;
 
+  const titleKo =
+    parsedDraft.diaryTitleKo || parsedDraft.diaryTitle || "사진 속 따뜻한 하루";
+  const titleEn =
+    parsedDraft.diaryTitleEn || parsedDraft.diaryTitle || "Our Warm Family Day";
+  const primaryTitle = params.language === "en" ? titleEn : titleKo;
+
   const auditAndVerifyPromise = runRealVerificationAndRepairLoop({
     client,
     draftSentences,
     consolidatedFacts,
     validPhotoIds,
     diaryDateText,
-    diaryTitle: parsedDraft.diaryTitle || "소중한 가족의 하루",
+    diaryTitle: primaryTitle,
     language: params.language,
     isHallucinationTest: Boolean(params.injectHallucinationTest),
   });
@@ -932,6 +933,8 @@ ${JSON.stringify(consolidatedFacts, null, 2)}
       ? parsedDraft.weather
       : "sunny";
 
+  const finalSentences = verificationOutcome.finalSentences;
+
   return {
     diaryPage: {
       diaryId: params.diaryId,
@@ -941,17 +944,28 @@ ${JSON.stringify(consolidatedFacts, null, 2)}
       updatedAt: now,
       dateIso: params.cluster.dateIso,
       diaryDateText,
+      diaryDateTextKo,
+      diaryDateTextEn,
       weather,
-      diaryTitle:
-        parsedDraft.diaryTitle ||
-        (params.language === "en" ? "Our Warm Family Day" : "사진 속 따뜻한 하루"),
+      diaryTitle: primaryTitle,
+      diaryTitleKo: titleKo,
+      diaryTitleEn: titleEn,
+      calendarStampLabelKo:
+        parsedDraft.calendarStampLabelKo || titleKo.slice(0, 10),
+      calendarStampLabelEn:
+        parsedDraft.calendarStampLabelEn ||
+        titleEn.split(" ").slice(0, 3).join(" "),
       isTitleUserEdited: false,
       groupingBasis: params.cluster.groupingBasis,
       groupingReason: params.cluster.groupingReason,
       photos: params.cluster.photos,
-      sentences: verificationOutcome.finalSentences,
-      fullDiaryText: verificationOutcome.finalSentences
-        .map((s) => s.text)
+      sentences: finalSentences,
+      fullDiaryText: finalSentences.map((s) => s.text).join(" "),
+      fullDiaryTextKo: finalSentences
+        .map((s) => s.textKo || s.text)
+        .join(" "),
+      fullDiaryTextEn: finalSentences
+        .map((s) => s.textEn || s.text)
         .join(" "),
       verification: verificationOutcome.report,
       rawCrayonBase64: imageInteraction?.output_image?.data || undefined,
@@ -1015,7 +1029,7 @@ export async function runRealVerificationAndRepairLoop(params: {
 Evaluate each diary sentence against the observed photo facts.
 Verdict criteria:
 - "PASS": Supported by observedFacts or reasonable gentle context without inventing events/dialogue.
-- "REPAIRED": Contains exaggerated claims, fabricated dialogue, or unsupported details that can be rewritten to match observedFacts. Provide "repairedText".
+- "REPAIRED": Contains exaggerated claims, fabricated dialogue, or unsupported details that can be rewritten to match observedFacts. Provide "repairedText", "repairedTextKo" (concise Korean <= 28 chars), and "repairedTextEn" (concise English <= 14 words).
 - "OMITTED": Completely fabricated claim (e.g., dinosaurs, spaceships, unshown people/places) with zero basis in observedFacts.
 
 Observed Facts per Photo:
@@ -1026,6 +1040,8 @@ ${JSON.stringify(
   params.draftSentences.map((s) => ({
     id: s.id,
     text: s.text,
+    textKo: s.textKo,
+    textEn: s.textEn,
     sourcePhotoIds: s.sourcePhotoIds,
   })),
   null,
@@ -1041,7 +1057,9 @@ Respond ONLY in valid JSON (${params.language === "en" ? "English" : "Korean"} e
       "originalText": "original sentence",
       "verdict": "PASS",
       "reason": "Specific reason based on photo evidence",
-      "repairedText": "repaired sentence if REPAIRED, else original"
+      "repairedText": "repaired sentence if REPAIRED, else original",
+      "repairedTextKo": "한국어 수정 문장 (REPAIRED인 경우)",
+      "repairedTextEn": "English repaired sentence (if REPAIRED)"
     }
   ]
 }`;
@@ -1058,23 +1076,31 @@ Respond ONLY in valid JSON (${params.language === "en" ? "English" : "Korean"} e
 
   const parsedPass1 = parseJsonFromModelText<{
     auditorCritique?: string;
-    sentenceAudits?: VerificationAuditItem[];
+    sentenceAudits?: Array<
+      VerificationAuditItem & {
+        repairedTextKo?: string;
+        repairedTextEn?: string;
+      }
+    >;
   }>(pass1Interaction.output_text || "{}");
 
-  const auditsPass1: VerificationAuditItem[] =
+  const auditsPass1 =
     parsedPass1.sentenceAudits && parsedPass1.sentenceAudits.length > 0
       ? parsedPass1.sentenceAudits
       : params.draftSentences.map((s) => ({
           sentenceId: s.id,
           originalText: s.text,
-          verdict: "PASS",
+          verdict: "PASS" as const,
           reason:
             params.language === "en"
               ? "Matches observable photo facts."
               : "사진 관찰 사실과 일치합니다.",
         }));
 
-  const auditMap = new Map<string, VerificationAuditItem>();
+  const auditMap = new Map<
+    string,
+    VerificationAuditItem & { repairedTextKo?: string; repairedTextEn?: string }
+  >();
   for (const a of auditsPass1) {
     auditMap.set(a.sentenceId, a);
   }
@@ -1094,6 +1120,8 @@ Respond ONLY in valid JSON (${params.language === "en" ? "English" : "Korean"} e
       candidateFinalSentences.push({
         ...s,
         text: audit.repairedText,
+        textKo: audit.repairedTextKo || s.textKo || audit.repairedText,
+        textEn: audit.repairedTextEn || s.textEn || audit.repairedText,
         originalModelText: audit.repairedText,
       });
     } else {
@@ -1204,6 +1232,257 @@ Respond ONLY in valid JSON (${params.language === "en" ? "English" : "Korean"}):
       sentenceAudits: auditsPass1,
       history,
       verifiedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * 기존 단일 언어로만 생성되었던 일기에 대해 한글/영어(KO/EN) 양방향 번역 및 달력 스탬프 라벨을 보충한다.
+ */
+export async function ensureBilingualDiaryContent(
+  diary: SavedDiaryPage
+): Promise<SavedDiaryPage> {
+  const client = getGeminiClient();
+  const prompt = `You are the Bilingual Picture Diary Translator for 'My Little Picasso'.
+Given the grounded child's picture diary below, provide both concise Korean (Ko) and concise English (En) versions for the title, calendar stamp label (2-3 words), and each sentence + evidence note.
+Keep Korean sentences concise (18-28 characters per sentence, '~했다/했어요' child diary style) so all 3 sentences fit inside 3-4 rows of a 22-column 원고지 grid!
+Keep English sentences concise (8-14 words per sentence, warm child's primary journal tone).
+
+Input Diary:
+${JSON.stringify(
+  {
+    diaryTitle: diary.diaryTitle,
+    diaryTitleKo: diary.diaryTitleKo,
+    diaryTitleEn: diary.diaryTitleEn,
+    sentences: diary.sentences.map((s) => ({
+      id: s.id,
+      text: s.text,
+      textKo: s.textKo,
+      textEn: s.textEn,
+      evidenceNote: s.evidenceNote,
+    })),
+  },
+  null,
+  2
+)}
+
+Respond ONLY in valid JSON:
+{
+  "diaryTitleKo": "한국어 그림일기 제목 (12자 이내)",
+  "diaryTitleEn": "Short English Picture Journal Title",
+  "calendarStampLabelKo": "2~3단어 달력 라벨",
+  "calendarStampLabelEn": "2-3 Word Calendar Label",
+  "sentences": [
+    {
+      "id": "s1",
+      "textKo": "짧은 한국어 문장 (25자 내외)",
+      "textEn": "Concise English sentence (10-14 words)",
+      "evidenceNoteKo": "한국어 시각적 근거 설명",
+      "evidenceNoteEn": "English visual evidence note"
+    }
+  ]
+}`;
+
+  const interaction = await client.interactions.create({
+    model: PRIMARY_MODEL,
+    input: prompt,
+    generation_config: {
+      thinking_level: "low",
+      max_output_tokens: 8192,
+    },
+  });
+
+  const parsed = parseJsonFromModelText<{
+    diaryTitleKo?: string;
+    diaryTitleEn?: string;
+    calendarStampLabelKo?: string;
+    calendarStampLabelEn?: string;
+    sentences?: Array<{
+      id: string;
+      textKo?: string;
+      textEn?: string;
+      evidenceNoteKo?: string;
+      evidenceNoteEn?: string;
+    }>;
+  }>(interaction.output_text || "{}");
+
+  const mapById = new Map(
+    (parsed.sentences || []).map((item) => [item.id, item])
+  );
+
+  const updatedSentences: GroundedDiarySentence[] = diary.sentences.map(
+    (orig, idx) => {
+      const tr = mapById.get(orig.id) || parsed.sentences?.[idx];
+      const textKo = tr?.textKo || orig.textKo || orig.text;
+      const textEn = tr?.textEn || orig.textEn || orig.text;
+      const evidenceNoteKo =
+        tr?.evidenceNoteKo || orig.evidenceNoteKo || orig.evidenceNote;
+      const evidenceNoteEn =
+        tr?.evidenceNoteEn || orig.evidenceNoteEn || orig.evidenceNote;
+      return {
+        ...orig,
+        textKo,
+        textEn,
+        evidenceNoteKo,
+        evidenceNoteEn,
+      };
+    }
+  );
+
+  return {
+    ...diary,
+    diaryDateTextKo:
+      diary.diaryDateTextKo || formatDiaryDateHeader(diary.dateIso, "ko"),
+    diaryDateTextEn:
+      diary.diaryDateTextEn || formatDiaryDateHeader(diary.dateIso, "en"),
+    diaryTitleKo: parsed.diaryTitleKo || diary.diaryTitleKo || diary.diaryTitle,
+    diaryTitleEn: parsed.diaryTitleEn || diary.diaryTitleEn || diary.diaryTitle,
+    calendarStampLabelKo:
+      parsed.calendarStampLabelKo ||
+      diary.calendarStampLabelKo ||
+      (parsed.diaryTitleKo || diary.diaryTitle).slice(0, 10),
+    calendarStampLabelEn:
+      parsed.calendarStampLabelEn ||
+      diary.calendarStampLabelEn ||
+      (parsed.diaryTitleEn || diary.diaryTitle)
+        .split(" ")
+        .slice(0, 3)
+        .join(" "),
+    sentences: updatedSentences,
+    fullDiaryTextKo: updatedSentences.map((s) => s.textKo || s.text).join(" "),
+    fullDiaryTextEn: updatedSentences.map((s) => s.textEn || s.text).join(" "),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * 한 주(Week)의 일기들을 종합하여 '주간 대표 크레파스 그림(Weekly Representative Crayon Illustration)'과
+ * 한국어/영어 주간 요약 이야기를 생성한다.
+ */
+export async function generateWeeklyRepresentativeSummary(params: {
+  weekId: string;
+  monthKey: string;
+  weekStartIso: string;
+  weekEndIso: string;
+  weekLabelKo: string;
+  weekLabelEn: string;
+  diaries: SavedDiaryPage[];
+  generateIllustration?: boolean;
+}): Promise<{
+  summaryItem: Omit<WeeklySummaryItem, "crayonIllustration"> & {
+    rawCrayonBase64?: string;
+    crayonMimeType: string;
+    crayonPromptUsed: string;
+    crayonFallbackUsed: boolean;
+  };
+}> {
+  const client = getGeminiClient();
+  const compactDays = params.diaries.map((d) => ({
+    diaryId: d.diaryId,
+    dateIso: d.dateIso,
+    titleKo: d.diaryTitleKo || d.diaryTitle,
+    titleEn: d.diaryTitleEn || d.diaryTitle,
+    sentencesKo: d.sentences.map((s) => s.textKo || s.text),
+    sentencesEn: d.sentences.map((s) => s.textEn || s.text),
+    observedFacts: d.photos.flatMap((p) => p.analysis.observedFacts.slice(0, 2)),
+  }));
+
+  const textPrompt = `You are the Weekly Family Memory Curator for 'My Little Picasso'.
+Synthesize the daily picture diaries from this week (${params.weekLabelKo} / ${params.weekLabelEn}) into a warm, grounded Weekly Representative Summary in both Korean and English.
+Never invent events not present in the daily diaries. Keep the tone like a nostalgic child's weekly storybook reflection (2-3 concise sentences).
+
+Daily Diaries in this Week:
+${JSON.stringify(compactDays, null, 2)}
+
+Respond ONLY in valid JSON:
+{
+  "titleKo": "이번 주를 대표하는 따뜻한 한국어 제목 (14자 이내)",
+  "titleEn": "Warm Weekly Highlight Title in English (max 6 words)",
+  "summaryKo": "한 주 동안 있었던 실제 순간들을 엮은 2~3문장의 따뜻한 한국어 주간 일기 요약.",
+  "summaryEn": "2-3 warm, grounded sentences summarizing the real family moments from this week in English.",
+  "highlightsKo": ["핵심 순간 1 (한국어)", "핵심 순간 2 (한국어)"],
+  "highlightsEn": ["Key moment 1 (English)", "Key moment 2 (English)"],
+  "weeklyIllustrationScene": "Concise visual description combining the week's key scenes for a single child's wax crayon drawing"
+}`;
+
+  const textInteraction = await client.interactions.create({
+    model: PRIMARY_MODEL,
+    input: textPrompt,
+    generation_config: {
+      thinking_level: "low",
+      max_output_tokens: 8192,
+    },
+  });
+
+  const parsed = parseJsonFromModelText<{
+    titleKo?: string;
+    titleEn?: string;
+    summaryKo?: string;
+    summaryEn?: string;
+    highlightsKo?: string[];
+    highlightsEn?: string[];
+    weeklyIllustrationScene?: string;
+  }>(textInteraction.output_text || "{}");
+
+  const combinedFacts =
+    parsed.weeklyIllustrationScene ||
+    compactDays.map((d) => `${d.titleEn}: ${d.observedFacts.join(", ")}`).join("; ");
+
+  const crayonPrompt = `Authentic 7-year-old child's weekly highlight wax crayon drawing on warm cream sketchbook paper (#F7F3E8), bringing together this week's favorite family moments in one storybook composition: ${combinedFacts}. Style: expressive hand-drawn wax crayon strokes, layered warm colors (faded orange #D96B43, mustard yellow #D9A441, olive green #6B7B5C, sky blue), visible paper texture. Strictly no text, no letters, no numbers, no watermarks.`;
+
+  let rawCrayonBase64: string | undefined;
+  let crayonMimeType = "image/png";
+  if (params.generateIllustration !== false) {
+    try {
+      const imgInteraction = await client.interactions.create({
+        model: ILLUSTRATION_MODEL,
+        input: crayonPrompt,
+      });
+      if (imgInteraction?.output_image?.data) {
+        rawCrayonBase64 = imgInteraction.output_image.data;
+        crayonMimeType = imgInteraction.output_image.mime_type || "image/png";
+      }
+    } catch (err) {
+      console.warn("[Weekly Crayon Illustration Warning]:", err);
+    }
+  }
+
+  const now = new Date().toISOString();
+  return {
+    summaryItem: {
+      weekId: params.weekId,
+      monthKey: params.monthKey,
+      weekStartIso: params.weekStartIso,
+      weekEndIso: params.weekEndIso,
+      weekLabelKo: params.weekLabelKo,
+      weekLabelEn: params.weekLabelEn,
+      titleKo: parsed.titleKo || "우리 가족의 반짝이는 한 주",
+      titleEn: parsed.titleEn || "Our Family's Shining Week",
+      summaryKo:
+        parsed.summaryKo ||
+        params.diaries
+          .map((d) => d.diaryTitleKo || d.diaryTitle)
+          .join(", ") + "의 추억이 모인 따뜻한 한 주였어요.",
+      summaryEn:
+        parsed.summaryEn ||
+        "A warm week filled with our favorite family moments: " +
+          params.diaries.map((d) => d.diaryTitleEn || d.diaryTitle).join(", ") +
+          ".",
+      highlightsKo:
+        parsed.highlightsKo && parsed.highlightsKo.length > 0
+          ? parsed.highlightsKo
+          : params.diaries.map((d) => d.diaryTitleKo || d.diaryTitle),
+      highlightsEn:
+        parsed.highlightsEn && parsed.highlightsEn.length > 0
+          ? parsed.highlightsEn
+          : params.diaries.map((d) => d.diaryTitleEn || d.diaryTitle),
+      diaryIds: params.diaries.map((d) => d.diaryId),
+      rawCrayonBase64,
+      crayonMimeType,
+      crayonPromptUsed: crayonPrompt,
+      crayonFallbackUsed: !rawCrayonBase64,
+      createdAt: now,
+      updatedAt: now,
     },
   };
 }

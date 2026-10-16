@@ -247,9 +247,9 @@ function drawChildFigure(
 }
 
 /**
- * 다중 날짜 가족 추억 데모 앨범 (총 4장, 3개 날짜 그룹)
- * - 2025-05-05 (2장): 봄 공원 산책길에서 노란 보조바퀴 자전거 첫 연습 + 벤치에서 간식 먹기 (같은 날 다중 사진 그룹화 검증)
- * - 2025-10-12 (1장): 가을 단풍 공원에서 같은 노란 자전거 타기
+ * 다중 날짜 가족 추억 데모 앨범 (총 5장, 3개 날짜 그룹)
+ * - 2025-05-05 (3장): 봄 공원 산책길에서 노란 보조바퀴 자전거 첫 연습 + 벤치에서 오렌지 주스 마시기 + 노을빛 산책길 귀가 (하루 3장 다중 사진 레이아웃 & 그룹화 검증)
+ * - 2025-05-08 (1장): 같은 주 목요일 공원 잔디밭 피크닉 매트 옆에 세워둔 노란 자전거와 비눗방울 놀이 (월간 달력 & 주간 대표 그림 검증)
  * - 2026-04-19 (1장): 이듬해 봄 벚꽃 공원에서 보조바퀴를 떼고 같은 노란 자전거를 타는 모습 (Memory Threads 시간 변화 검증)
  */
 export async function generateMultiDateFamilyDemoPhotos(): Promise<ClientUploadPhoto[]> {
@@ -267,10 +267,16 @@ export async function generateMultiDateFamilyDemoPhotos(): Promise<ClientUploadP
       scene: "spring_bench",
     },
     {
-      photoId: "demo_20251012_autumn",
-      fileName: "20251012_autumn_maple_bike.jpg",
-      capturedAt: "2025-10-12",
-      scene: "autumn_ride",
+      photoId: "demo_20250505_sunset",
+      fileName: "20250505_park_sunset_walk_3.jpg",
+      capturedAt: "2025-05-05",
+      scene: "spring_sunset",
+    },
+    {
+      photoId: "demo_20250508_picnic",
+      fileName: "20250508_may_picnic_bubbles.jpg",
+      capturedAt: "2025-05-08",
+      scene: "may_picnic",
     },
     {
       photoId: "demo_20260419_blossom",
@@ -337,29 +343,49 @@ export async function generateMultiDateFamilyDemoPhotos(): Promise<ClientUploadP
 
       // 벤치 옆에 세워진 동일한 노란 보조바퀴 자전거
       drawYellowBicycle(ctx, 455, 330, 0.95, true);
-    } else if (spec.scene === "autumn_ride") {
-      // 2025-10-12 가을 노을빛 하늘과 단풍나무 아래에서 같은 노란 자전거 타기
-      ctx.fillStyle = "#F7E4C8";
-      ctx.fillRect(0, 0, 640, 270);
-      ctx.fillStyle = "#C89B5B";
-      ctx.fillRect(0, 270, 640, 170);
-      // 산책로
+    } else if (spec.scene === "spring_sunset") {
+      // 같은 날(2025-05-05) 저녁 노을빛 공원 산책길에서 노란 보조바퀴 자전거를 끌고 걸어가는 모습
+      ctx.fillStyle = "#FBE4C9";
+      ctx.fillRect(0, 0, 640, 268);
+      ctx.fillStyle = "#7AA865";
+      ctx.fillRect(0, 268, 640, 172);
       ctx.fillStyle = "#DFCBB2";
-      ctx.fillRect(0, 325, 640, 85);
-      // 붉은/노란 단풍나무
-      ctx.fillStyle = "#6D4C41";
-      ctx.fillRect(130, 135, 30, 145);
-      ctx.fillStyle = "#D95D39";
+      ctx.fillRect(0, 322, 640, 88);
+      // 노을 태양
+      ctx.fillStyle = "#E8834A";
       ctx.beginPath();
-      ctx.arc(145, 125, 70, 0, Math.PI * 2);
+      ctx.arc(110, 110, 38, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#E6A13C";
+      drawChildFigure(ctx, 260, 282, "#E57348", "#F4C44E", 0.95);
+      drawYellowBicycle(ctx, 375, 335, 0.95, true);
+    } else if (spec.scene === "may_picnic") {
+      // 2025-05-08 같은 주 목요일: 체크무늬 피크닉 매트와 비눗방울, 옆에 세워둔 노란 자전거
+      ctx.fillStyle = "#E2F2FD";
+      ctx.fillRect(0, 0, 640, 265);
+      ctx.fillStyle = "#88BE70";
+      ctx.fillRect(0, 265, 640, 175);
+      // 빨간 체크 피크닉 매트
+      ctx.fillStyle = "#E56B55";
       ctx.beginPath();
-      ctx.arc(195, 145, 50, 0, Math.PI * 2);
+      ctx.roundRect(110, 315, 220, 75, 10);
       ctx.fill();
-
-      drawChildFigure(ctx, 355, 280, "#6B7B5C", "#F4C44E", 1.02);
-      drawYellowBicycle(ctx, 365, 335, 1.0, true);
+      ctx.fillStyle = "#FFF8EE";
+      ctx.fillRect(140, 325, 40, 55);
+      ctx.fillRect(220, 325, 40, 55);
+      // 비눗방울들
+      ctx.strokeStyle = "#7CC1E8";
+      ctx.lineWidth = 3;
+      for (const [bx, by, br] of [
+        [280, 180, 16],
+        [325, 145, 22],
+        [365, 190, 12],
+      ]) {
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      drawChildFigure(ctx, 220, 275, "#F2B138", "#F4C44E", 0.96);
+      drawYellowBicycle(ctx, 470, 335, 0.95, true);
     } else {
       // 2026-04-19 이듬해 봄 벚꽃 나무 아래에서 훌쩍 자란 아이가 보조바퀴 없이 노란 자전거를 타는 모습
       ctx.fillStyle = "#E6F3FC";

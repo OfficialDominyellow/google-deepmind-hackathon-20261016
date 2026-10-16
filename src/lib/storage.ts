@@ -8,6 +8,7 @@ import { OAuth2Client } from "google-auth-library";
 import type {
   MemoryThreadConnection,
   SavedDiaryPage,
+  WeeklySummaryItem,
   WorkspaceDocument,
 } from "@/types/diary";
 
@@ -401,6 +402,12 @@ export async function updateDiaryPageContent(params: {
   workspaceToken: string;
   diaryId: string;
   diaryTitle?: string;
+  diaryTitleKo?: string;
+  diaryTitleEn?: string;
+  calendarStampLabelKo?: string;
+  calendarStampLabelEn?: string;
+  diaryDateTextKo?: string;
+  diaryDateTextEn?: string;
   sentences?: SavedDiaryPage["sentences"];
   verification?: SavedDiaryPage["verification"];
   crayonIllustration?: SavedDiaryPage["crayonIllustration"];
@@ -427,6 +434,14 @@ export async function updateDiaryPageContent(params: {
   const updated: SavedDiaryPage = {
     ...existing,
     diaryTitle: params.diaryTitle ?? existing.diaryTitle,
+    diaryTitleKo: params.diaryTitleKo ?? existing.diaryTitleKo,
+    diaryTitleEn: params.diaryTitleEn ?? existing.diaryTitleEn,
+    calendarStampLabelKo:
+      params.calendarStampLabelKo ?? existing.calendarStampLabelKo,
+    calendarStampLabelEn:
+      params.calendarStampLabelEn ?? existing.calendarStampLabelEn,
+    diaryDateTextKo: params.diaryDateTextKo ?? existing.diaryDateTextKo,
+    diaryDateTextEn: params.diaryDateTextEn ?? existing.diaryDateTextEn,
     isTitleUserEdited:
       params.diaryTitle !== undefined &&
       params.diaryTitle !== existing.diaryTitle
@@ -434,14 +449,54 @@ export async function updateDiaryPageContent(params: {
         : existing.isTitleUserEdited,
     sentences: updatedSentences,
     fullDiaryText: updatedSentences.map((s) => s.text).join(" "),
+    fullDiaryTextKo: updatedSentences
+      .map((s) => s.textKo || s.text)
+      .join(" "),
+    fullDiaryTextEn: updatedSentences
+      .map((s) => s.textEn || s.text)
+      .join(" "),
     verification: params.verification ?? existing.verification,
     crayonIllustration:
       params.crayonIllustration ?? existing.crayonIllustration,
     updatedAt: new Date().toISOString(),
   };
 
-  await diaryRef.set(updated);
+  await diaryRef.set(JSON.parse(JSON.stringify(updated)));
   return updated;
+}
+
+/**
+ * 주간 대표 그림(Weekly Representative Summary)을 워크스페이스에 저장/갱신한다.
+ */
+export async function saveWeeklySummaryToWorkspace(params: {
+  workspaceId: string;
+  workspaceToken: string;
+  weeklySummary: WeeklySummaryItem;
+}): Promise<WeeklySummaryItem[]> {
+  const workspace = await verifyAndGetWorkspace(
+    params.workspaceId,
+    params.workspaceToken
+  );
+  const existingList = Array.isArray(workspace.weeklySummaries)
+    ? [...workspace.weeklySummaries]
+    : [];
+  const idx = existingList.findIndex(
+    (w) => w.weekId === params.weeklySummary.weekId
+  );
+  if (idx >= 0) {
+    existingList[idx] = params.weeklySummary;
+  } else {
+    existingList.push(params.weeklySummary);
+  }
+  existingList.sort((a, b) => a.weekStartIso.localeCompare(b.weekStartIso));
+
+  const db = getFirestoreClient();
+  const wsRef = db.collection("workspaces").doc(params.workspaceId);
+  await wsRef.update({
+    weeklySummaries: JSON.parse(JSON.stringify(existingList)),
+    updatedAt: new Date().toISOString(),
+  });
+  return existingList;
 }
 
 /**
@@ -656,6 +711,7 @@ export async function resetEntireWorkspace(params: {
     generationEpoch: newEpoch,
     activeJobStatus: "idle",
     memoryThreads: [],
+    weeklySummaries: [],
     pendingDeletePaths: failedPaths,
     lastResetAt: resetAt,
     updatedAt: resetAt,
