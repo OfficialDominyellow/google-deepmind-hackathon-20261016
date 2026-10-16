@@ -223,25 +223,41 @@ export interface WeeklySummaryItem {
 export interface MemoryThreadNode {
   diaryId: string;
   diaryTitle: string;
+  diaryTitleKo?: string;
+  diaryTitleEn?: string;
   diaryDateText: string;
+  diaryDateTextKo?: string;
+  diaryDateTextEn?: string;
   dateIso: string | null;
   photoId: string;
   photoFileName: string;
   photoMediaUrl: string;
   matchedClue: string;
+  matchedClueKo?: string;
+  matchedClueEn?: string;
 }
 
 export interface MemoryThreadConnection {
   threadId: string;
   title: string;
+  titleKo?: string;
+  titleEn?: string;
   category: "object" | "place" | "activity" | "growth_change";
   sharedSubject: string;
+  sharedSubjectKo?: string;
+  sharedSubjectEn?: string;
   summary: string;
+  summaryKo?: string;
+  summaryEn?: string;
   confidence: "high" | "medium";
   /** 왜 이 사진들이 연결되었는지 사진 속 실제 시각적/시간적 근거 */
   evidenceDescription: string;
+  evidenceDescriptionKo?: string;
+  evidenceDescriptionEn?: string;
   /** 사진만으로 단정할 수 없는 한계점 명시 */
   limitationNote: string;
+  limitationNoteKo?: string;
+  limitationNoteEn?: string;
   nodes: MemoryThreadNode[];
 }
 

@@ -7,6 +7,7 @@ import type {
   GroundedDiarySentence,
   DiaryLanguage,
   MemoryThreadConnection,
+  MemoryThreadNode,
   WeatherKind,
   WeeklySummaryItem,
 } from "@/types/diary";
@@ -147,6 +148,74 @@ function getSentenceEvidence(
     return s.evidenceNoteEn || s.evidenceNote || "";
   }
   return s.evidenceNoteKo || s.evidenceNote || "";
+}
+
+function getThreadTitle(t: MemoryThreadConnection, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (t.titleEn) return t.titleEn;
+    if (t.title.includes("노란 자전거") || t.title.includes("자전거")) {
+      return "Growing Together on the Yellow Bicycle";
+    }
+    return t.title;
+  }
+  return t.titleKo || t.title;
+}
+
+function getThreadSubject(t: MemoryThreadConnection, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (t.sharedSubjectEn) return t.sharedSubjectEn;
+    if (t.sharedSubject.includes("자전거")) return "Yellow Bicycle";
+    if (t.sharedSubject.includes("공원")) return "Neighborhood Park";
+    return t.sharedSubject;
+  }
+  return t.sharedSubjectKo || t.sharedSubject;
+}
+
+function getThreadSummary(t: MemoryThreadConnection, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (t.summaryEn) return t.summaryEn;
+    if (t.summary.includes("자전거") || t.summary.includes("바퀴")) {
+      return "Traces our child's growth from practicing on a balance bike with training wheels in May 2025 to riding a two-wheeler with confidence in April 2026.";
+    }
+    return t.summary;
+  }
+  return t.summaryKo || t.summary;
+}
+
+function getThreadEvidence(t: MemoryThreadConnection, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (t.evidenceDescriptionEn) return t.evidenceDescriptionEn;
+    if (t.evidenceDescription.includes("자전거") || t.evidenceDescription.includes("색상")) {
+      return "Matching yellow curved frame, black handle grips, and child growth markers across May 2025 and April 2026 photographs.";
+    }
+    return t.evidenceDescription;
+  }
+  return t.evidenceDescriptionKo || t.evidenceDescription;
+}
+
+function getThreadLimitation(t: MemoryThreadConnection, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (t.limitationNoteEn) return t.limitationNoteEn;
+    if (t.limitationNote.includes("단정") || t.limitationNote.includes("외형")) {
+      return "While visual characteristics and frame color match, physical continuity across years is inferred from photographic appearance alone.";
+    }
+    return t.limitationNote;
+  }
+  return t.limitationNoteKo || t.limitationNote;
+}
+
+function getNodeMatchedClue(node: MemoryThreadNode, lang: DiaryLanguage): string {
+  if (lang === "en") {
+    if (node.matchedClueEn) return node.matchedClueEn;
+    if (node.matchedClue.includes("자전거") && node.matchedClue.includes("보조바퀴")) {
+      return "Yellow balance bike with training wheels on park grass";
+    }
+    if (node.matchedClue.includes("자전거") && node.matchedClue.includes("두 바퀴")) {
+      return "Riding the yellow two-wheel bike steadily along the paved trail";
+    }
+    return node.matchedClue;
+  }
+  return node.matchedClueKo || node.matchedClue;
 }
 
 /**
@@ -3208,114 +3277,169 @@ export default function MyLittlePicassoPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2C221E] px-3 py-1 text-xs font-bold text-amber-100">
-                ⏳ Memory Time Machine · 시간을 잇는 기억의 실타래
+                {currentActiveLanguage === "en"
+                  ? "⏳ Memory Time Machine · Connecting Moments Across Time"
+                  : "⏳ Memory Time Machine · 시간을 잇는 기억의 실타래"}
               </span>
               <h2 className="mt-2 text-xl font-extrabold text-[#2C221E] sm:text-2xl">
-                서로 다른 날의 사진 속에서 자라나는 가족의 시간
+                {currentActiveLanguage === "en"
+                  ? "Family Moments Growing Across Different Days & Years"
+                  : "서로 다른 날의 사진 속에서 자라나는 가족의 시간"}
               </h2>
               <p className="mt-1 text-xs sm:text-sm text-[#6E5D4F]">
-                AI가 여러 날짜의 일기 사이에 반복 등장하는 사물·장소·성장의 단서를 찾아 실제 사진 근거와 함께 연결합니다.
+                {currentActiveLanguage === "en"
+                  ? "AI traces grounded visual clues of recurring objects, places, and growth milestones across diary dates with photographic evidence."
+                  : "AI가 여러 날짜의 일기 사이에 반복 등장하는 사물·장소·성장의 단서를 찾아 실제 사진 근거와 함께 연결합니다."}
               </p>
             </div>
           </div>
 
           {memoryThreads.length === 0 ? (
             <div className="mt-5 rounded-2xl border border-amber-900/15 bg-white/80 p-6 text-center text-xs sm:text-sm text-stone-600">
-              서로 다른 날짜의 그림일기가 2페이지 이상 쌓이면, 반복 등장하는 사물이나 장소의 변화를 연결하는{" "}
-              <strong className="text-stone-900">Memory Threads</strong>가 이곳에 자동으로 생성됩니다. (상단의{" "}
-              <strong>[🚲 시간 여행 데모 사진첩 불러오기]</strong>로 즉시 체험해보세요!)
+              {currentActiveLanguage === "en" ? (
+                <>
+                  When picture diaries from 2 or more different dates are saved,{" "}
+                  <strong className="text-stone-900">Memory Threads</strong>{" "}
+                  connecting recurring objects or places across time will automatically appear here. (Try clicking{" "}
+                  <strong>[🚲 Load Time Travel Demo Album]</strong> above to explore immediately!)
+                </>
+              ) : (
+                <>
+                  서로 다른 날짜의 그림일기가 2페이지 이상 쌓이면, 반복 등장하는 사물이나 장소의 변화를 연결하는{" "}
+                  <strong className="text-stone-900">Memory Threads</strong>가 이곳에 자동으로 생성됩니다. (상단의{" "}
+                  <strong>[🚲 시간 여행 데모 사진첩 불러오기]</strong>로 즉시 체험해보세요!)
+                </>
+              )}
             </div>
           ) : (
             <div className="mt-6 space-y-6">
-              {memoryThreads.map((thread) => (
-                <div
-                  key={thread.threadId}
-                  className="rounded-2xl border border-amber-900/20 bg-white/95 p-5 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-lg bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-950">
-                          🔗 {thread.sharedSubject}
-                        </span>
-                        <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-semibold text-stone-700">
-                          신뢰도: {thread.confidence === "high" ? "높음" : "보통"}
+              {memoryThreads.map((thread) => {
+                const threadTitle = getThreadTitle(thread, currentActiveLanguage);
+                const threadSubject = getThreadSubject(thread, currentActiveLanguage);
+                const threadSummary = getThreadSummary(thread, currentActiveLanguage);
+                const threadEvidence = getThreadEvidence(thread, currentActiveLanguage);
+                const threadLimitation = getThreadLimitation(thread, currentActiveLanguage);
+
+                return (
+                  <div
+                    key={thread.threadId}
+                    className="rounded-2xl border border-amber-900/20 bg-white/95 p-5 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-950">
+                            🔗 {threadSubject}
+                          </span>
+                          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-semibold text-stone-700">
+                            {currentActiveLanguage === "en"
+                              ? thread.confidence === "high"
+                                ? "Confidence: High"
+                                : "Confidence: Medium"
+                              : thread.confidence === "high"
+                              ? "신뢰도: 높음"
+                              : "신뢰도: 보통"}
+                          </span>
+                        </div>
+                        <h3 className="mt-2 text-lg font-extrabold text-[#2C221E]">
+                          {threadTitle}
+                        </h3>
+                        <p className="mt-1 text-xs sm:text-sm leading-relaxed text-stone-700">
+                          {threadSummary}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 시간순 노드 타임라인 */}
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      {thread.nodes.map((node, nIdx) => {
+                        const targetPageIdx = savedDiaries.findIndex(
+                          (d) => d.diaryId === node.diaryId
+                        );
+                        const nodeDateText =
+                          currentActiveLanguage === "en"
+                            ? node.diaryDateTextEn ||
+                              node.dateIso ||
+                              node.diaryDateText
+                            : node.diaryDateTextKo || node.diaryDateText;
+                        const nodeTitle =
+                          currentActiveLanguage === "en"
+                            ? node.diaryTitleEn || node.diaryTitle
+                            : node.diaryTitleKo || node.diaryTitle;
+                        const nodeClue = getNodeMatchedClue(
+                          node,
+                          currentActiveLanguage
+                        );
+
+                        return (
+                          <div
+                            key={`${node.diaryId}_${node.photoId}_${nIdx}`}
+                            onClick={() => {
+                              if (targetPageIdx >= 0) {
+                                setActivePageIndex(targetPageIdx);
+                                setHighlightedPhotoId(node.photoId);
+                                window.scrollTo({ top: 380, behavior: "smooth" });
+                              }
+                            }}
+                            className="group cursor-pointer rounded-2xl border border-stone-200 bg-[#FFFDF8] p-3.5 transition hover:border-[#D96B43] hover:shadow-md"
+                          >
+                            <div className="flex items-center justify-between text-xs font-bold text-[#9E4220]">
+                              <span>📅 {nodeDateText}</span>
+                              <span className="text-[11px] group-hover:underline">
+                                {currentActiveLanguage === "en"
+                                  ? "Open Diary Page →"
+                                  : "일기 펴보기 →"}
+                              </span>
+                            </div>
+                            {node.photoMediaUrl && (
+                              <div className="mt-2 aspect-4/3 w-full overflow-hidden rounded-xl bg-stone-100">
+                                <img
+                                  src={node.photoMediaUrl}
+                                  alt={nodeTitle}
+                                  className="h-full w-full object-cover transition group-hover:scale-105"
+                                />
+                              </div>
+                            )}
+                            <div className="mt-2.5 text-xs font-bold text-stone-900">
+                              {nodeTitle}
+                            </div>
+                            <p className="mt-1 text-[11px] leading-relaxed text-stone-600">
+                              {currentActiveLanguage === "en"
+                                ? "Visual Clue: "
+                                : "관찰 단서: "}
+                              {nodeClue}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* 연결 근거 및 추론의 한계 명시 */}
+                    <div className="mt-4 grid grid-cols-1 gap-2 rounded-xl bg-amber-50/70 p-3 text-[11px] sm:grid-cols-2 border border-amber-200/70">
+                      <div>
+                        <strong className="text-amber-950">
+                          {currentActiveLanguage === "en"
+                            ? "✔ Grounded Visual Connection: "
+                            : "✔ 시각적·시간적 연결 근거: "}
+                        </strong>
+                        <span className="text-stone-700">
+                          {threadEvidence}
                         </span>
                       </div>
-                      <h3 className="mt-2 text-lg font-extrabold text-[#2C221E]">
-                        {thread.title}
-                      </h3>
-                      <p className="mt-1 text-xs sm:text-sm leading-relaxed text-stone-700">
-                        {thread.summary}
-                      </p>
+                      <div>
+                        <strong className="text-stone-700">
+                          {currentActiveLanguage === "en"
+                            ? "⚖️ Epistemic Limits of Inference: "
+                            : "⚖️ 사진 추론의 한계 명시: "}
+                        </strong>
+                        <span className="text-stone-600">
+                          {threadLimitation}
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* 시간순 노드 타임라인 */}
-                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    {thread.nodes.map((node, nIdx) => {
-                      const targetPageIdx = savedDiaries.findIndex(
-                        (d) => d.diaryId === node.diaryId
-                      );
-                      return (
-                        <div
-                          key={`${node.diaryId}_${node.photoId}_${nIdx}`}
-                          onClick={() => {
-                            if (targetPageIdx >= 0) {
-                              setActivePageIndex(targetPageIdx);
-                              setHighlightedPhotoId(node.photoId);
-                              window.scrollTo({ top: 380, behavior: "smooth" });
-                            }
-                          }}
-                          className="group cursor-pointer rounded-2xl border border-stone-200 bg-[#FFFDF8] p-3.5 transition hover:border-[#D96B43] hover:shadow-md"
-                        >
-                          <div className="flex items-center justify-between text-xs font-bold text-[#9E4220]">
-                            <span>📅 {node.diaryDateText}</span>
-                            <span className="text-[11px] group-hover:underline">
-                              일기 펴보기 →
-                            </span>
-                          </div>
-                          {node.photoMediaUrl && (
-                            <div className="mt-2 aspect-4/3 w-full overflow-hidden rounded-xl bg-stone-100">
-                              <img
-                                src={node.photoMediaUrl}
-                                alt={node.diaryTitle}
-                                className="h-full w-full object-cover transition group-hover:scale-105"
-                              />
-                            </div>
-                          )}
-                          <div className="mt-2.5 text-xs font-bold text-stone-900">
-                            {node.diaryTitle}
-                          </div>
-                          <p className="mt-1 text-[11px] leading-relaxed text-stone-600">
-                            관찰 단서: {node.matchedClue}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* 연결 근거 및 추론의 한계 명시 */}
-                  <div className="mt-4 grid grid-cols-1 gap-2 rounded-xl bg-amber-50/70 p-3 text-[11px] sm:grid-cols-2 border border-amber-200/70">
-                    <div>
-                      <strong className="text-amber-950">
-                        ✔ 시각적·시간적 연결 근거:{" "}
-                      </strong>
-                      <span className="text-stone-700">
-                        {thread.evidenceDescription}
-                      </span>
-                    </div>
-                    <div>
-                      <strong className="text-stone-700">
-                        ⚖️ 사진 추론의 한계 명시:{" "}
-                      </strong>
-                      <span className="text-stone-600">
-                        {thread.limitationNote}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

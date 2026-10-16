@@ -1556,7 +1556,7 @@ Examples of grounded connections:
 Strict Rules:
 1. Every thread MUST connect at least 2 DIFFERENT diaryId entries, citing exact diaryId and photoId values from the input.
 2. Do NOT claim 100% physical identity if only visual similarity is observable — clearly state what is visually matched in "evidenceDescription" AND state the epistemic boundary in "limitationNote".
-3. Write all text in ${language === "en" ? "English" : "Korean"}.
+3. Provide BOTH Korean and English text for every field so the app seamlessly supports bilingual display.
 
 Input Diaries:
 ${JSON.stringify(compactDiaries, null, 2)}
@@ -1566,23 +1566,30 @@ Respond ONLY in valid JSON:
   "threads": [
     {
       "threadId": "thread_1",
-      "title": "Warm title of the memory thread",
+      "titleKo": "시간을 잇는 따뜻한 한국어 제목 (예: 두 바퀴로 만나는 노란 자전거의 성장)",
+      "titleEn": "Warm English title (e.g., Growing Together on the Yellow Bicycle)",
       "category": "object",
-      "sharedSubject": "Specific recurring subject name",
-      "summary": "1-2 sentence narrative explaining how these moments connect across time",
+      "sharedSubjectKo": "구체적인 반복 사물/장소명 (한국어, 예: 노란 자전거)",
+      "sharedSubjectEn": "Specific recurring subject name (English, e.g., Yellow Bicycle)",
+      "summaryKo": "이 순간들이 시간 속에서 어떻게 연결되는지 설명하는 1~2문장의 따뜻한 한국어 서술.",
+      "summaryEn": "1-2 warm sentences in English explaining how these family moments connect across time.",
       "confidence": "high",
-      "evidenceDescription": "Specific visual features shared across the linked photos",
-      "limitationNote": "Honest note on what cannot be proven from photos alone",
+      "evidenceDescriptionKo": "연결된 사진들에서 공통 관찰된 구체적 시각적 특징 (한국어)",
+      "evidenceDescriptionEn": "Specific visual features shared across the linked photos (English)",
+      "limitationNoteKo": "사진만으로는 단정할 수 없는 한계점 솔직한 명시 (한국어)",
+      "limitationNoteEn": "Honest note in English on what cannot be proven from photos alone",
       "nodes": [
         {
           "diaryId": "exact_diary_id_1",
           "photoId": "exact_photo_id_1",
-          "matchedClue": "What is seen in this specific photo"
+          "matchedClueKo": "이 특정 사진에서 확인된 구체적 시각 단서 (한국어)",
+          "matchedClueEn": "Visual clue confirmed in this specific photo (English)"
         },
         {
           "diaryId": "exact_diary_id_2",
           "photoId": "exact_photo_id_2",
-          "matchedClue": "What is seen in this later photo"
+          "matchedClueKo": "이후 사진에서 확인된 구체적 시각 단서 (한국어)",
+          "matchedClueEn": "Visual clue confirmed in this later photo (English)"
         }
       ]
     }
@@ -1603,16 +1610,28 @@ Respond ONLY in valid JSON:
       threads?: Array<{
         threadId?: string;
         title?: string;
+        titleKo?: string;
+        titleEn?: string;
         category?: "object" | "place" | "activity" | "growth_change";
         sharedSubject?: string;
+        sharedSubjectKo?: string;
+        sharedSubjectEn?: string;
         summary?: string;
+        summaryKo?: string;
+        summaryEn?: string;
         confidence?: "high" | "medium";
         evidenceDescription?: string;
+        evidenceDescriptionKo?: string;
+        evidenceDescriptionEn?: string;
         limitationNote?: string;
+        limitationNoteKo?: string;
+        limitationNoteEn?: string;
         nodes?: Array<{
           diaryId: string;
           photoId: string;
-          matchedClue: string;
+          matchedClue?: string;
+          matchedClueKo?: string;
+          matchedClueEn?: string;
         }>;
       }>;
     }>(interaction.output_text || "{}");
@@ -1637,29 +1656,80 @@ Respond ONLY in valid JSON:
         if (!targetPhoto) continue;
 
         distinctDiaryIds.add(targetDiary.diaryId);
+        const clueKo =
+          rawNode.matchedClueKo ||
+          rawNode.matchedClue ||
+          targetPhoto.analysis.sceneSummary;
+        const clueEn =
+          rawNode.matchedClueEn ||
+          rawNode.matchedClue ||
+          targetPhoto.analysis.sceneSummary;
+
         resolvedNodes.push({
           diaryId: targetDiary.diaryId,
           diaryTitle: targetDiary.diaryTitle,
+          diaryTitleKo: targetDiary.diaryTitleKo || targetDiary.diaryTitle,
+          diaryTitleEn: targetDiary.diaryTitleEn || targetDiary.diaryTitle,
           diaryDateText: targetDiary.diaryDateText,
+          diaryDateTextKo:
+            targetDiary.diaryDateTextKo || targetDiary.diaryDateText,
+          diaryDateTextEn:
+            targetDiary.diaryDateTextEn || targetDiary.diaryDateText,
           dateIso: targetDiary.dateIso,
           photoId: targetPhoto.photoId,
           photoFileName: targetPhoto.fileName,
           photoMediaUrl: targetPhoto.mediaUrl,
-          matchedClue:
-            rawNode.matchedClue || targetPhoto.analysis.sceneSummary,
+          matchedClue: language === "en" ? clueEn : clueKo,
+          matchedClueKo: clueKo,
+          matchedClueEn: clueEn,
         });
       }
 
       if (distinctDiaryIds.size >= 2 && resolvedNodes.length >= 2) {
+        const titleKo =
+          rawThread.titleKo || rawThread.title || "시간을 잇는 가족의 기억";
+        const titleEn =
+          rawThread.titleEn || rawThread.title || "Connected Family Moments Across Time";
+        const subjectKo =
+          rawThread.sharedSubjectKo ||
+          rawThread.sharedSubject ||
+          "반복 등장하는 추억 단서";
+        const subjectEn =
+          rawThread.sharedSubjectEn ||
+          rawThread.sharedSubject ||
+          "Shared Memory Clue";
+        const summaryKo =
+          rawThread.summaryKo ||
+          rawThread.summary ||
+          "서로 다른 날의 사진 속에서 함께 발견된 추억의 연결고리입니다.";
+        const summaryEn =
+          rawThread.summaryEn ||
+          rawThread.summary ||
+          "Observed across multiple family diary dates.";
+        const evidenceKo =
+          rawThread.evidenceDescriptionKo ||
+          rawThread.evidenceDescription ||
+          "서로 다른 날짜의 사진에서 동일한 형태와 색상의 시각적 특징이 관찰되었습니다.";
+        const evidenceEn =
+          rawThread.evidenceDescriptionEn ||
+          rawThread.evidenceDescription ||
+          "Matched visual descriptors across different dates.";
+        const limitKo =
+          rawThread.limitationNoteKo ||
+          rawThread.limitationNote ||
+          "외형과 색상 특징이 일치하지만, 사진의 시각적 단서에 기반한 연결입니다.";
+        const limitEn =
+          rawThread.limitationNoteEn ||
+          rawThread.limitationNote ||
+          "Visual traits match closely, though physical identity is inferred from photographic appearance.";
+
         validThreads.push({
           threadId:
             rawThread.threadId ||
             `thread_${Date.now()}_${validThreads.length + 1}`,
-          title:
-            rawThread.title ||
-            (language === "en"
-              ? "Connected Family Moments"
-              : "시간을 잇는 가족의 기억"),
+          title: language === "en" ? titleEn : titleKo,
+          titleKo,
+          titleEn,
           category:
             rawThread.category &&
             ["object", "place", "activity", "growth_change"].includes(
@@ -1667,25 +1737,19 @@ Respond ONLY in valid JSON:
             )
               ? rawThread.category
               : "object",
-          sharedSubject:
-            rawThread.sharedSubject ||
-            (language === "en" ? "Shared Memory Clue" : "반복 등장하는 추억 단서"),
-          summary:
-            rawThread.summary ||
-            (language === "en"
-              ? "Observed across multiple family diary dates."
-              : "서로 다른 날의 사진 속에서 함께 발견된 추억의 연결고리입니다."),
+          sharedSubject: language === "en" ? subjectEn : subjectKo,
+          sharedSubjectKo: subjectKo,
+          sharedSubjectEn: subjectEn,
+          summary: language === "en" ? summaryEn : summaryKo,
+          summaryKo,
+          summaryEn,
           confidence: rawThread.confidence === "medium" ? "medium" : "high",
-          evidenceDescription:
-            rawThread.evidenceDescription ||
-            (language === "en"
-              ? "Matched visual descriptors across different dates."
-              : "서로 다른 날짜의 사진에서 동일한 형태와 색상의 시각적 특징이 관찰되었습니다."),
-          limitationNote:
-            rawThread.limitationNote ||
-            (language === "en"
-              ? "Visual traits match closely, though physical identity is inferred from photographic appearance."
-              : "외형과 색상 특징이 일치하지만, 사진의 시각적 단서에 기반한 연결입니다."),
+          evidenceDescription: language === "en" ? evidenceEn : evidenceKo,
+          evidenceDescriptionKo: evidenceKo,
+          evidenceDescriptionEn: evidenceEn,
+          limitationNote: language === "en" ? limitEn : limitKo,
+          limitationNoteKo: limitKo,
+          limitationNoteEn: limitEn,
           nodes: resolvedNodes,
         });
       }
